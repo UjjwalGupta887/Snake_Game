@@ -1,0 +1,171 @@
+import random
+import pygame
+import os
+
+pygame.mixer.init()   #ise music vali file activate hogi
+pygame.init()
+
+# Background Clours
+white = (255,255,255)
+red = (255, 0, 0)
+black = (0, 0, 0)
+
+# Creating window
+screen_width = 900
+screen_height = 600
+gameWindow = pygame.display.set_mode((screen_width, screen_height))   # ye length or width display karaa ke liye
+
+# backgruond image
+bgimg=pygame.image.load('snake.jpg')
+bgimg=pygame.transform.scale(bgimg, (screen_width,screen_height)).convert_alpha()
+
+# Game Title ye game ka name dane ak liye
+pygame.display.set_caption("SnakesWithUjjwal")
+pygame.display.update()
+
+clock = pygame.time.Clock()
+
+font = pygame.font.SysFont(None, 55)  # ye score dane ke liye humne font diya hai ..
+def text_screen(text,clour, x, y):    # kiya likhu , colour , x , y ka size
+    screen_text = font.render(text,True,clour)  #ye pygame ke documentation mai hai render
+    gameWindow.blit(screen_text, [x, y] )
+
+# ye snake ke size ke liye function banaya hai
+def plot_snake(gameWindow, black, snk_list, snake_size) :
+    for x,y in snk_list:
+        pygame.draw.rect(gameWindow, black, [x,y, snake_size, snake_size])
+
+def welcome():
+    exit_game = False
+    while not exit_game:
+        gameWindow.fill((233,210,229))
+        text_screen("Welcome to Snakes", black, 260, 250)
+        text_screen("Press Space Bar To Play", black, 232, 290)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit_game = True
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    pygame.mixer.music.load('back.mp3.mp3')  # ise music play hoga
+                    pygame.mixer.music.play()  # isa mucic play hoga
+                    game_loop()
+
+        pygame.display.update()
+        clock.tick(60)
+
+def game_loop():
+    # Game specific variables
+    exit_game = False
+    game_over = False
+    snake_x = 45  # ye x-axis ke length hai
+    snake_y = 55  # ye y-axis ke length hai
+    velocity_x = 0  # ye speed hai x-axsis ki
+    velocity_y = 0  # ye speed hai y-axis ki
+    snake_size = 20  # ye motiie hai
+    snk_list = []
+    snk_len = 1
+    if (not os.path.exists('hiscore.txt')):
+        with open('hiscore.txt','w') as f:
+            f.write('0')
+    with open("hiscore.txt", "r") as f:
+        hiscore = f.read()
+
+    food_x = random.randint(20, screen_width / 2)  # ye food hai jo x or y-axis ka hai or screen mai kisi bhi jagaa dal dagaa
+    food_y = random.randint(20, screen_height / 2)
+    score = 0
+    initial_velocity = 5
+    fps = 30  # ye flap per second hai
+
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont(None, 55)  # ye score dane ke liye humne font diya hai ..
+
+    while not exit_game:
+        if game_over:
+            with open("hiscore.txt", "w") as f:
+                f.write(str(hiscore))
+
+            gameWindow.fill(white)
+            text_screen('Game Over Press Enter to Continue', red, 100, 300)
+
+           # yha pe quit condition chal nhi rhi thi isliye ye humne dubara lagayi hai
+            for event in pygame.event.get():  # ye conditin ko handle karne ke liyee
+                if event.type == pygame.QUIT:
+                    exit_game = True
+
+                if event.type==pygame.KEYDOWN : # ye code humne game ko dubara start karne ke liye hai or enter press karne ke liye hai
+                    if event.key == pygame.K_RETURN :
+                        welcome()
+
+        else:
+            for event in pygame.event.get():  # ye conditin ko handle karne ke liyee
+                if event.type == pygame.QUIT:
+                    exit_game = True
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RIGHT:  # ye key hai
+                        velocity_x = initial_velocity  # agar x-axis mai hai tho y-axis zero hoga
+                        velocity_y = 0
+
+                    if event.key == pygame.K_LEFT:
+                        velocity_x = - initial_velocity
+                        velocity_y = 0
+
+                    if event.key == pygame.K_UP:
+                        velocity_y = - initial_velocity
+                        velocity_x = 0
+
+                    if event.key == pygame.K_DOWN:
+                        velocity_y = initial_velocity
+                        velocity_x = 0
+
+
+                    if event.key == pygame.K_q:
+                        score +=5
+
+            snake_x = snake_x + velocity_x  # snake ke move karne ke liye
+            snake_y = snake_y + velocity_y
+
+            if abs(snake_x - food_x) < 6 and abs(snake_y - food_y) < 6:
+                score += 10
+                food_x = random.randint(20, screen_width / 2)
+                food_y = random.randint(20, screen_height / 2)
+                snk_len += 5
+                # pygame.mixer.music.load('beep.mp3.mp3')  # ise music play hoga
+                # pygame.mixer.music.play()  # isa mucic play hoga
+
+            if score > int(hiscore):
+                hiscore = score
+
+            gameWindow.fill(white)  # ye background ke liye
+            gameWindow.blit(bgimg, (0,0))
+            text_screen("Score: " + str(score) + ' High Score : ' + str(hiscore), red, 5, 5)  # isme humne score ka colour diya hai
+
+            pygame.draw.rect(gameWindow, red, [food_x, food_y, snake_size, snake_size])  # ye snake ke food ka size
+
+            # ye snake ke size ko increase karne ke liye ..
+            head = []
+            head.append(snake_x)
+            head.append(snake_y)
+            snk_list.append(head)
+
+            if len(snk_list) > snk_len:  # ye snake ki length ko cut kar rha hai.
+                del snk_list[0]
+            if head in snk_list[:-1]:
+                game_over = True
+                pygame.mixer.music.load('gameover.mp3.mp3')  # ise music play hoga
+                pygame.mixer.music.play()  # isa mucic play hoga
+
+            if snake_x<0 or snake_x >screen_width or snake_y <0 or snake_y >screen_height : # agar snake border se touch ho hoga tho game over
+                game_over = True
+                pygame.mixer.music.load('gameover.mp3.mp3')  # ise music play hoga
+                pygame.mixer.music.play()  # isa mucic play hoga
+
+            plot_snake(gameWindow, white, snk_list, snake_size)  # ye snake ke size ke liye
+
+        pygame.display.update()
+        clock.tick(fps)
+
+    pygame.quit()
+    quit()
+
+welcome()
